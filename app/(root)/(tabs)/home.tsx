@@ -20,6 +20,7 @@ import icons from "@/constants/icons";
 import images from "@/constants/images";
 import { getPlants, logout } from "@/lib/appwrite";
 import { useGlobalContext } from "@/lib/global-provider";
+import seed from "@/lib/seed";
 
 const { width, height } = Dimensions.get("window");
 const API_URL = "https://nat0705-medicinal-plant-api.hf.space";
@@ -107,7 +108,7 @@ export default function Index() {
 
        Alert.alert(
           'Prediction Result',
-          `The model identified the plant as ${data.plant.toUpperCase()} with a confidence of ${data.confidence.toFixed(2)}%.`
+          `The model identified the plant as ${data.plant.toUpperCase()} with a ${data.confidence.toFixed(2)}% probability rate.`
         );
 
       }
@@ -121,7 +122,16 @@ export default function Index() {
     await AsyncStorage.removeItem("guestSkipped");
     router.replace("/welcome");
   };
-
+  
+  const onSeedPress = async () => {
+    try {
+      const result = await seed();
+      console.log(result);
+    } catch (error) {
+      console.error("Error seeding data:", error);
+    }
+  }
+  
   return (
     <SafeAreaView className="flex-1 bg-white">
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
@@ -181,6 +191,12 @@ export default function Index() {
             className="mt-5 w-full"
             IconLeft={icons.photography}
           />
+         {/* <CustomButton
+            title="Add Plant"
+            onPress={onSeedPress}
+            className="mt-5 w-full"
+            IconLeft={icons.photography}
+          /> */}
         </View>
 
         {/* Loading Overlay */}

@@ -5,7 +5,7 @@ import {
   Databases,
   ID,
   Query,
-  Storage,
+  Storage
 } from "appwrite";
 import * as ImagePicker from 'expo-image-picker';
 
@@ -13,9 +13,10 @@ import * as ImagePicker from 'expo-image-picker';
 interface PlantProps {
     name: string;
     scientific_name: string;
+    common_name?: string
     informations?: string;
     how_to_use?: string;
-    image_url: any;
+    image_url: any | null;
 }
 
 
@@ -27,7 +28,6 @@ export const config = {
     plantsCollectionID: process.env.EXPO_PUBLIC_APPWRITE_PLANTS_COLLECTION_ID,
     plantLocationsCollectionID: process.env.EXPO_PUBLIC_APPWRITE_PLANT_LOCATIONS_COLLECTION_ID,
     bucketID: process.env.EXPO_PUBLIC_APPWRITE_BUCKET_ID,
-    adminsCollectionID: process.env.EXPO_PUBLIC_APPWRITE_USERS_COLLECTION_ID
 }
 
 export const client = new Client();
@@ -40,7 +40,7 @@ client
 export const avatar = new Avatars(client);
 export const account = new Account(client);
 export const databases = new Databases(client);
-export const storage = new Storage(client)
+export const storage = new Storage(client);
 
 export async function createAdmin() {
   try {
@@ -138,6 +138,7 @@ export async function getPlantLocations({ id }: { id?: string }) {
   }
 }
 
+
 export async function uploadImageAsync(asset: ImagePicker.ImagePickerAsset) {
   try {
     console.log("[uploadImageAsync] Uploading asset:", asset);
@@ -167,37 +168,10 @@ export async function uploadImageAsync(asset: ImagePicker.ImagePickerAsset) {
   }
 }
 
-
-const prepareNativeFile = async (
-  asset: ImagePicker.ImagePickerAsset
-): Promise<{ name: string; type: string; size: number; uri: string }> => {
-  console.log("[prepareNativeFile] asset ==>", asset);
-
-  try {
-    let fileSize = asset.fileSize ?? 0;
-
-    // Fetch file size if not available
-    if (fileSize === 0) {
-      const response = await fetch(asset.uri);
-      const blob = await response.blob();
-      fileSize = blob.size;
-    }
-
-    return {
-      name: asset.fileName ?? `upload-${Date.now()}.jpg`,
-      size: fileSize,
-      type: asset.mimeType ?? "image/jpeg",
-      uri: asset.uri,
-    };
-  } catch (error) {
-    console.error("[prepareNativeFile] error ==>", error);
-    return Promise.reject(error);
-  }
-};
-
 export async function createMedicinalPlant({ 
   name, 
-  scientific_name, 
+  scientific_name,
+  common_name,
   how_to_use,
   informations,
   image_url, 
@@ -210,8 +184,9 @@ export async function createMedicinalPlant({
       {
         name,
         scientific_name,
+        common_name: common_name || "",
         how_to_use: how_to_use || "",
-        informations: how_to_use || "",
+        informations: informations || "",
         image_url,
       }
     );
@@ -239,18 +214,15 @@ export const createPlantLocation = async (data: {
 
 export const deletePlantWithLocations = async (plantId: string) => {
   try {
-    // Step 1: Get all locations linked to the plant
     const locations = await databases.listDocuments(config.databasesID!, config.plantLocationsCollectionID!, [
       Query.equal("plant_id", plantId)
     ]);
 
-    // Step 2: Delete each location
     const deleteLocationPromises = locations.documents.map(location =>
       databases.deleteDocument(config.databasesID!, config.plantLocationsCollectionID!, location.$id)
     );
     await Promise.all(deleteLocationPromises);
 
-    // Step 3: Delete the plant
     await databases.deleteDocument(config.databasesID!, config.plantsCollectionID!, plantId);
 
     console.log("Plant and its locations deleted successfully");
@@ -263,20 +235,17 @@ export const deletePlantWithLocations = async (plantId: string) => {
 
 export const updatePlantLocation = async (plantId: string, locations: { latitude: number; longitude: number }[]) => {
   try {
-    // Step 1: Fetch existing locations for the plant
     const existingLocations = await databases.listDocuments(
       config.databasesID!,
       config.plantLocationsCollectionID!,
       [Query.equal("plant_id", plantId)]
     );
 
-    // Step 2: Delete all existing locations
     const deletePromises = existingLocations.documents.map(location =>
       databases.deleteDocument(config.databasesID!, config.plantLocationsCollectionID!, location.$id)
     );
     await Promise.all(deletePromises);
 
-    // Step 3: Add the new locations
     for (const loc of locations) {
       await databases.createDocument(config.databasesID!, config.plantLocationsCollectionID!, "unique()", {
         plant_id: plantId,
@@ -295,24 +264,69 @@ export const updatePlantLocation = async (plantId: string, locations: { latitude
 
 export const updatePlant = async (
   plantId: string,
+  name: string,
+  scientific_name: string,
+  common_name: string,
   infoText: string,
-  usageText: string,
+  howToUse: string,
+  imageUrl: string | null 
 ) => {
   try {
-    await databases.updateDocument(
-      config.databasesID!,
-      config.plantsCollectionID!,
-      plantId,
-      {
-        informations: infoText,
-        how_to_use: usageText,
-      }
-    );
+    await databases.updateDocument(config.databasesID!, config.plantsCollectionID!, plantId, {
+      name,
+      scientific_name,
+      common_name,
+      informations: infoText,
+      how_to_use: howToUse,
+      image_url: imageUrl,
+    });
 
-    console.log("Plant usage and information updated successfully");
+    console.log("Plant details updated successfully");
     return true;
   } catch (error) {
-    console.error("Error updating plant usage and info:", error);
+    console.error("Error updating plant:", error);
     return false;
   }
 };
+
+
+export async function uploadPlantImage(asset: ImagePicker.ImagePickerAsset): Promise<string> {
+  try {
+    console.log("[uploadPlantImage] Uploading asset:", asset);
+
+    const formData = new FormData();
+    formData.append("fileId", "unique()");
+
+    formData.append("file", {
+      uri: asset.uri,
+      name: asset.fileName ?? "upload.jpg",
+      type: "image/jpeg",
+    } as any);
+
+    const res = await fetch(
+      `https://cloud.appwrite.io/v1/storage/buckets/${config.bucketID}/files`,
+      {
+        method: "POST",
+        headers: {
+          "X-Appwrite-Project": config.projectID!,
+          "Content-Type": "multipart/form-data",
+        },
+        body: formData,
+      }
+    );
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`[Upload failed] ${res.status}: ${errText}`);
+    }
+
+    const uploadedFile = await res.json();
+    console.log("[File uploaded!]", uploadedFile);
+
+    return `https://cloud.appwrite.io/v1/storage/buckets/${config.bucketID}/files/${uploadedFile.$id}/view?project=${config.projectID}`;
+  } catch (error) {
+    console.error("[uploadPlantImage error]", error);
+    throw error;
+  }
+}
+

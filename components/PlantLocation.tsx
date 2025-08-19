@@ -100,7 +100,7 @@ const PlantLocation = ({ locations = [], disableMarkerPress = false }: Props) =>
               <Text className="text-lg font-bold text-green-800">
                 {selectedPlant?.plant_id?.name || "No Name Available"}
               </Text>
-              <Text className="text-sm text-green-700">
+              <Text className="font-rubik-italic text-sm text-green-700">
                 {selectedPlant?.plant_id?.scientific_name || "Scientific name not available"}
               </Text>
             </View>

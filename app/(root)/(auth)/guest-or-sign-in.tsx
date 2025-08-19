@@ -75,7 +75,7 @@ const GuestOrSignIn = () => {
               className="bg-primary w-full"
             />
             {/* <CustomButton
-              title="Continue as Guest"
+              title="Seed"
               onPress={onSeedPress}
               className="bg-primary w-full"
             /> */}

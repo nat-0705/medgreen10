@@ -1,13 +1,24 @@
-import PlantLocation from "@/components/PlantLocation";
-import { getPlantLocations } from "@/lib/appwrite";
-import { useAppwrite } from "@/lib/useAppwrite";
-import React from 'react';
-import { ActivityIndicator, SafeAreaView, View } from "react-native";
+import React, { useEffect } from 'react';
+import { ActivityIndicator, SafeAreaView, View } from 'react-native';
 
+import PlantLocation from '@/components/PlantLocation';
+import { getPlantLocations } from '@/lib/appwrite';
+import { usePlantStore } from '@/lib/plantStore';
+import { useAppwrite } from '@/lib/useAppwrite';
 const Map = () => {
-  const { data: locations, loading } = useAppwrite({
-      fn: getPlantLocations,
+  const { refreshKey } = usePlantStore();
+
+  const {
+    data: locations,
+    loading,
+    refetch,
+  } = useAppwrite({
+    fn: getPlantLocations,
   });
+
+  useEffect(() => {
+    refetch({});
+  }, [refreshKey]);
 
   return (
     <SafeAreaView className="flex-1 justify-center">
@@ -19,7 +30,7 @@ const Map = () => {
         <PlantLocation locations={locations ?? []} />
       )}
     </SafeAreaView>
-  )
-}
+  );
+};
 
-export default Map
+export default Map;

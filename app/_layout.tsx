@@ -17,6 +17,8 @@ export default function RootLayout() {
     "Rubik-Medium": require("../assets/fonts/Rubik-Medium.ttf"),
     "Rubik-Regular": require("../assets/fonts/Rubik-Regular.ttf"),
     "Rubik-SemiBold": require("../assets/fonts/Rubik-SemiBold.ttf"),
+     "Rubik-BoldItalic": require("../assets/fonts/Rubik-BoldItalic.ttf"),
+    "Rubik-Italic": require("../assets/fonts/Rubik-Italic.ttf"),
   });
 
   const onLayoutRootView = useCallback(async () => {

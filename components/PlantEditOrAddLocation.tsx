@@ -1,15 +1,14 @@
-import { Models } from "appwrite";
 import * as Location from "expo-location";
 import React, { useEffect, useRef, useState } from "react";
 import { Alert, View } from "react-native";
 import MapView, { LatLng, Marker } from "react-native-maps";
 
 interface Props {
-  locations?: Models.Document[];
+  locations: LatLng[];
   onLocationsChange: (locations: LatLng[]) => void;
 }
 
-const PlantEditLocation = ({ locations = [], onLocationsChange }: Props) => {
+const PlantEditOrAddLocation = ({ locations = [], onLocationsChange }: Props) => {
   const [markers, setMarkers] = useState<LatLng[]>([]);
   const mapRef = useRef<MapView>(null);
 
@@ -19,9 +18,7 @@ const PlantEditLocation = ({ locations = [], onLocationsChange }: Props) => {
       longitude: loc.longitude,
     }));
     setMarkers(initialMarkers);
-  }, [locations]);
 
-  useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
@@ -39,7 +36,8 @@ const PlantEditLocation = ({ locations = [], onLocationsChange }: Props) => {
         longitudeDelta: 0.05,
       });
     })();
-  }, []);
+}, [locations]);
+
 
   const handleMapPress = (event: any) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
@@ -83,4 +81,4 @@ const PlantEditLocation = ({ locations = [], onLocationsChange }: Props) => {
   );
 };
 
-export default PlantEditLocation;
+export default PlantEditOrAddLocation;
